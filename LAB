@@ -1,0 +1,493 @@
+                                                                                        CAESAR CIPHER
+#include <stdio.h>
+#include <string.h>
+
+void caesarCipher(char *text, int shift) {
+    char result[strlen(text)];
+    
+    for (int i = 0; text[i] != '\0'; ++i) {
+        char c = text[i];
+        
+        if (c >= 'a' && c <= 'z') {
+            result[i] = (c + shift - 'a') % 26 + 'a';
+        } else if (c >= 'A' && c <= 'Z') {
+            result[i] = (c + shift - 'A') % 26 + 'A';
+        } else {
+            result[i] = c;
+        }
+    }
+    result[strlen(text)] = '\0';
+    printf("Ciphered Text: %s\n", result);
+}
+
+int main() {
+    char text[] = "Hello, World!";
+    int shift = 3;
+    caesarCipher(text, shift);
+    return 0;
+}
+
+                                                                                        PLAYFAIR CIPHER
+#include <stdio.h>
+#include <string.h>
+
+#define MAX 100
+
+void encrypt(char *message, char *key) {
+    char table[5][5];
+    int k = 0, i, j;
+    int len = strlen(key);
+    int m = 0;
+
+    // Create the Playfair cipher table
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < 5; j++) {
+            if (k < len) {
+                if (key[k] == 'j') key[k] = 'i'; // Treat 'j' as 'i'
+                if (strchr(table, key[k]) == NULL) {
+                    table[i][j] = key[k];
+                    k++;
+                } else {
+                    j--;
+                }
+            } else {
+                for (char c = 'a'; c <= 'z'; c++) {
+                    if (c == 'j') continue;
+                    if (strchr(table, c) == NULL) {
+                        table[i][j] = c;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Encrypt the message
+    for (i = 0; message[i]; i++) {
+        if (message[i] == 'j') message[i] = 'i';
+        if (message[i] == ' ') continue;
+        if (message[i + 1] == message[i]) {
+            message = strcat(message, "x");
+            i++;
+        }
+    }
+
+    for (i = 0; i < strlen(message); i += 2) {
+        int r1, r2, c1, c2;
+        for (r1 = 0; r1 < 5; r1++) {
+            for (c1 = 0; c1 < 5; c1++) {
+                if (table[r1][c1] == message[i]) break;
+            }
+            if (c1 < 5) break;
+        }
+        for (r2 = 0; r2 < 5; r2++) {
+            for (c2 = 0; c2 < 5; c2++) {
+                if (table[r2][c2] == message[i + 1]) break;
+            }
+            if (c2 < 5) break;
+        }
+
+        if (r1 == r2) {
+            printf("%c%c", table[r1][(c1 + 1) % 5], table[r2][(c2 + 1) % 5]);
+        } else if (c1 == c2) {
+            printf("%c%c", table[(r1 + 1) % 5][c1], table[(r2 + 1) % 5][c2]);
+        } else {
+            printf("%c%c", table[r1][c2], table[r2][c1]);
+        }
+    }
+}
+
+int main() {
+    char message[MAX], key[MAX];
+
+    printf("Enter the message: ");
+    fgets(message, sizeof(message), stdin);
+    printf("Enter the key: ");
+    fgets(key, sizeof(key), stdin);
+
+    // Remove newline characters
+    message[strcspn(message, "\n")] = 0;
+    key[strcspn(key, "\n")] = 0;
+
+    printf("Encrypted Message: ");
+    encrypt(message, key);
+    printf("\n");
+
+    return 0;
+}
+
+                                                                                HILL CIPHER
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX 10
+
+void encrypt(int key[MAX][MAX], int plaintext[MAX], int ciphertext[MAX], int n) {
+    for (int i = 0; i < n; i++) {
+        ciphertext[i] = 0;
+        for (int j = 0; j < n; j++) {
+            ciphertext[i] += key[i][j] * plaintext[j];
+        }
+        ciphertext[i] = ciphertext[i] % 26;
+    }
+}
+
+void hillCipher(char *plaintext, int key[MAX][MAX], int n) {
+    int len = strlen(plaintext);
+    int plaintextVector[MAX] = {0};
+    int ciphertextVector[MAX] = {0};
+
+    for (int i = 0; i < len; i++) {
+        plaintextVector[i % n] = plaintext[i] - 'A';
+        if ((i + 1) % n == 0 || i == len - 1) {
+            encrypt(key, plaintextVector, ciphertextVector, n);
+            for (int j = 0; j < n; j++) {
+                printf("%c", ciphertextVector[j] + 'A');
+            }
+        }
+    }
+    printf("\n");
+}
+
+int main() {
+    int key[MAX][MAX] = {{6, 24, 1}, {13, 16, 10}, {20, 17, 15}};
+    char plaintext[] = "HELLOHILL";
+    int n = 3;
+
+    hillCipher(plaintext, key, n);
+    return 0;
+}
+
+                                                                                    VIGENERE CIPHER
+#include <stdio.h>
+#include <string.h>
+
+void encrypt(char *plaintext, char *key, char *ciphertext) {
+    int i, j = 0;
+    int keyLength = strlen(key);
+    for (i = 0; plaintext[i] != '\0'; i++) {
+        if (plaintext[i] >= 'A' && plaintext[i] <= 'Z') {
+            ciphertext[i] = (plaintext[i] + key[j] - 2 * 'A') % 26 + 'A';
+            j = (j + 1) % keyLength;
+        } else {
+            ciphertext[i] = plaintext[i];
+        }
+    }
+    ciphertext[i] = '\0';
+}
+
+int main() {
+    char plaintext[] = "HELLO";
+    char key[] = "KEY";
+    char ciphertext[100];
+
+    encrypt(plaintext, key, ciphertext);
+    printf("Ciphertext: %s\n", ciphertext);
+
+    return 0;
+}
+
+
+                                                                RAIL FENCE-ROW ANS COLUMN TRANSFORMATION TECHNIQUE
+#include <stdio.h>
+#include <string.h>
+
+void railFenceEncrypt(char *text, int key) {
+    int len = strlen(text);
+    char rail[key][len];
+    for (int i = 0; i < key; i++)
+        for (int j = 0; j < len; j++)
+            rail[i][j] = '\n';
+
+    int row = 0, col = 0;
+    int dir_down = 0;
+
+    for (int i = 0; i < len; i++) {
+        if (row == 0) dir_down = 1;
+        if (row == key - 1) dir_down = 0;
+
+        rail[row][col++] = text[i];
+
+        dir_down ? row++ : row--;
+    }
+
+    for (int i = 0; i < key; i++) {
+        for (int j = 0; j < len; j++) {
+            if (rail[i][j] != '\n')
+                printf("%c", rail[i][j]);
+        }
+    }
+}
+
+int main() {
+    char text[] = "HELLORAILFENCE";
+    int key = 3;
+    railFenceEncrypt(text, key);
+    return 0;
+}
+
+                                                                                              DFS
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX 100
+
+int graph[MAX][MAX], visited[MAX];
+int n;
+
+void dfs(int vertex) {
+    visited[vertex] = 1;
+    printf("%d ", vertex);
+
+    for (int i = 0; i < n; i++) {
+        if (graph[vertex][i] == 1 && !visited[i]) {
+            dfs(i);
+        }
+    }
+}
+
+int main() {
+    int edges, startVertex;
+
+    printf("Enter number of vertices: ");
+    scanf("%d", &n);
+
+    printf("Enter number of edges: ");
+    scanf("%d", &edges);
+
+    for (int i = 0; i < edges; i++) {
+        int u, v;
+        printf("Enter edge (u v): ");
+        scanf("%d %d", &u, &v);
+        graph[u][v] = 1;
+        graph[v][u] = 1; // For undirected graph
+    }
+
+    printf("Enter starting vertex for DFS: ");
+    scanf("%d", &startVertex);
+
+    printf("DFS traversal: ");
+    dfs(startVertex);
+
+    return 0;
+}
+
+                                                                                        RSA 
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+int gcd(int a, int b) {
+    return b == 0 ? a : gcd(b, a % b);
+}
+
+int modInverse(int a, int m) {
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1;
+}
+
+void generateKeys(int *e, int *d, int *n) {
+    int p = 61, q = 53; // Two prime numbers
+    *n = p * q;
+    int phi = (p - 1) * (q - 1);
+    
+    *e = 17; // Public exponent
+    *d = modInverse(*e, phi);
+}
+
+int main() {
+    int e, d, n;
+    generateKeys(&e, &d, &n);
+    printf("Public Key: (e: %d, n: %d)\n", e, n);
+    printf("Private Key: (d: %d)\n", d);
+    return 0;
+}
+
+                                                                         DIFFIE HELLMAN KEY EXCHANGE ALGORITHM
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+long long power(long long base, long long exp, long long mod) {
+    long long result = 1;
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            result = (result * base) % mod;
+        }
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+    return result;
+}
+
+int main() {
+    long long p = 23; // A prime number
+    long long g = 5;  // A primitive root modulo p
+
+    long long a = 6; // Alice's private key
+    long long b = 15; // Bob's private key
+
+    long long A = power(g, a, p); // Alice's public key
+    long long B = power(g, b, p); // Bob's public key
+
+    long long secretA = power(B, a, p); // Shared secret for Alice
+    long long secretB = power(A, b, p); // Shared secret for Bob
+
+    printf("Alice's Public Key: %lld\n", A);
+    printf("Bob's Public Key: %lld\n", B);
+    printf("Shared Secret (Alice): %lld\n", secretA);
+    printf("Shared Secret (Bob): %lld\n", secretB);
+
+    return 0;
+}
+
+                                                                                   MD5 HASHING
+#include <stdio.h>
+#include <string.h>
+#include <openssl/md5.h>
+
+void calculate_md5(const char *input, unsigned char output[MD5_DIGEST_LENGTH]) {
+    MD5((unsigned char*)input, strlen(input), output);
+}
+
+void print_md5(unsigned char output[MD5_DIGEST_LENGTH]) {
+    for(int i = 0; i < MD5_DIGEST_LENGTH; i++) {
+        printf("%02x", output[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    const char *text = "Hello, World!";
+    unsigned char digest[MD5_DIGEST_LENGTH];
+
+    calculate_md5(text, digest);
+    print_md5(digest);
+
+    return 0;
+}
+
+                                                                                          SHA-1 HASHING
+#include <stdio.h>
+#include <string.h>
+#include <openssl/sha.h>
+
+void compute_sha1(const char *input, unsigned char output[SHA_DIGEST_LENGTH]) {
+    SHA1((unsigned char*)input, strlen(input), output);
+}
+
+void print_hash(unsigned char hash[SHA_DIGEST_LENGTH]) {
+    for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
+        printf("%02x", hash[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    const char *text = "Hello, World!";
+    unsigned char hash[SHA_DIGEST_LENGTH];
+
+    compute_sha1(text, hash);
+    print_hash(hash);
+
+    return 0;
+}
+
+                                                                                 DIGITAL SIGNATURE STANDARD
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
+
+void generate_key_pair() {
+    RSA *rsa = RSA_generate_key(2048, RSA_F4, NULL, NULL);
+    FILE *private_key_file = fopen("private_key.pem", "wb");
+    PEM_write_RSAPrivateKey(private_key_file, rsa, NULL, NULL, 0, NULL, NULL);
+    fclose(private_key_file);
+
+    FILE *public_key_file = fopen("public_key.pem", "wb");
+    PEM_write_RSA_PUBKEY(public_key_file, rsa);
+    fclose(public_key_file);
+
+    RSA_free(rsa);
+}
+
+void sign_message(const char *message, const char *private_key_path) {
+    FILE *private_key_file = fopen(private_key_path, "rb");
+    RSA *rsa = PEM_read_RSAPrivateKey(private_key_file, NULL, NULL, NULL);
+    fclose(private_key_file);
+
+    unsigned char *signature = malloc(RSA_size(rsa));
+    unsigned int signature_length;
+
+    RSA_sign(NID_sha256, (unsigned char *)message, strlen(message), signature, &signature_length, rsa);
+    RSA_free(rsa);
+
+    FILE *signature_file = fopen("signature.bin", "wb");
+    fwrite(signature, sizeof(unsigned char), signature_length, signature_file);
+    fclose(signature_file);
+    free(signature);
+}
+
+int verify_signature(const char *message, const char *signature_path, const char *public_key_path) {
+    FILE *public_key_file = fopen(public_key_path, "rb");
+    RSA *rsa = PEM_read_RSA_PUBKEY(public_key_file, NULL, NULL, NULL);
+    fclose(public_key_file);
+
+    unsigned char *signature = malloc(RSA_size(rsa));
+    FILE *signature_file = fopen(signature_path, "rb");
+    fread(signature, sizeof(unsigned char), RSA_size(rsa), signature_file);
+    fclose(signature_file);
+
+    int result = RSA_verify(NID_sha256, (unsigned char *)message, strlen(message), signature, RSA_size(rsa), rsa);
+    RSA_free(rsa);
+    free(signature);
+
+    return result;
+}
+
+int main() {
+    generate_key_pair();
+    const char *message = "This is a test message.";
+    sign_message(message, "private_key.pem");
+
+    if (verify_signature(message, "signature.bin", "public_key.pem")) {
+        printf("Signature verified successfully.\n");
+    } else {
+        printf("Signature verification failed.\n");
+    }
+    return 0;
+}
+
+                                                     WORKING WITH SNORT TOOL TO DEMONSTRATE INTRUSION DETETION SYSTEM
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+    // Sample Snort command to run the intrusion detection system
+    char command[256];
+    
+    // Define the Snort command
+    snprintf(command, sizeof(command), "snort -A console -c /etc/snort/snort.conf -i eth0");
+
+    // Execute the Snort command
+    int result = system(command);
+
+    // Check if the command was successful
+    if (result == -1) {
+        perror("Error executing Snort");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
